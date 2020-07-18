@@ -173,8 +173,7 @@ on_handle_new_connection (OrgBluezProfile1 *interface,
 	GDBusMessage *message;
 	GError *error = NULL;	
 	GUnixFDList *fd_list;
-	socklen_t optlen;
-	struct sockaddr_rc saddr;
+	static socklen_t optlen = sizeof(struct sockaddr_rc);
 	struct spp_data *spp = user_data;
 
 	message = g_dbus_method_invocation_get_message (invocation);
@@ -184,9 +183,6 @@ on_handle_new_connection (OrgBluezProfile1 *interface,
 
 	printf ("handle_new_conn called for device: %s fd: %d!\n", device, spp->sock_fd);
 
-	memset(&saddr, 0, sizeof(saddr));
-	optlen = sizeof(saddr);
-
 	if (getsockname (spp->sock_fd, (struct sockaddr *) &(spp->local), &optlen) < 0) {
 		printf("handle_new_conn: local getsockname failed: %s\n", strerror(errno));
 		return FALSE;
@@ -194,7 +190,6 @@ on_handle_new_connection (OrgBluezProfile1 *interface,
 
 	print_bdaddr("handle_new_conn local: ", &(spp->local.rc_bdaddr));
 
-	memset(&saddr, 0, sizeof(saddr));
 	if (getpeername (spp->sock_fd, (struct sockaddr *) &(spp->remote), &optlen) < 0) {
 		printf("handle_new_conn: remote getsockname failed: %s\n", strerror(errno));
 		return FALSE;
