@@ -141,12 +141,14 @@ server_read_data (gpointer user_data) {
 	bytes_read = read(spp->sock_fd, buf, sizeof(buf));
 	if ( bytes_read > 0 ) {
 		printf("received [%s]\n", buf);
+
+	        // continue listening
+	        return true;
 	} else {
 		printf("error reading from client [%d] %s\n", errno, strerror(errno));
-	}
 
-	// continue listening
-	return true;
+	        return false;
+	}
 }
 
 void
