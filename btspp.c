@@ -172,10 +172,8 @@ print_bdaddr (gchar *prefix, const bdaddr_t *bdaddr)
 
     // print BTADDR in reverse
     for (int i = 5; i >= 0; i--) {
-        printf("%02X%s", bdaddr->b[i], i > 0 ? ":":"");
+        printf("%02X%c", bdaddr->b[i], i > 0 ? ':':'\n');
     }
-
-    printf ("\n");
 }
 
 static gboolean
