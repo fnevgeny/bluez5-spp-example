@@ -31,6 +31,7 @@
 #include "profile1-iface.h"
 
 #define SERIAL_PORT_PROFILE_UUID "00001101-0000-1000-8000-00805f9b34fb"
+#define SERIAL_PORT_PROFILE_PATH "/bluetooth/profile/serial_port"
 
 typedef struct {
     uint8_t b[6];
@@ -59,12 +60,12 @@ int register_profile(struct spp_data *spp, GDBusProxy *proxy)
 
     g_variant_builder_init(&profile_builder, G_VARIANT_TYPE("(osa{sv})"));
 
-    if (g_variant_is_object_path("/bluetooth/profile/serial_port")) {
+    if (g_variant_is_object_path(SERIAL_PORT_PROFILE_PATH)) {
         printf("object path is good!\n");
     }
 
     g_variant_builder_add (&profile_builder, "o",
-            "/bluetooth/profile/serial_port");
+            SERIAL_PORT_PROFILE_PATH);
 
     g_variant_builder_add (&profile_builder, "s", SERIAL_PORT_PROFILE_UUID);
 
@@ -250,7 +251,7 @@ int main(int argc, char *argv[])
     error = NULL;
     if (!g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (interface),
                         conn,
-                        "/bluetooth/profile/serial_port",
+                        SERIAL_PORT_PROFILE_PATH,
                         &error))
     {
         printf ("dbus_interface_skeleton_export failed for SPP!\n");
