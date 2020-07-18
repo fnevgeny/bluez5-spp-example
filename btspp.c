@@ -45,7 +45,6 @@ struct sockaddr_rc {
 struct spp_data {
 	GMainLoop *loop;	
 	int sock_fd;
-	gboolean server;
 	struct sockaddr_rc local;
 	struct sockaddr_rc remote;	
 };
@@ -93,13 +92,8 @@ int register_profile(struct spp_data *spp, GDBusProxy *proxy)
 	g_variant_builder_open(&profile_builder, G_VARIANT_TYPE("{sv}"));
 	g_variant_builder_add (&profile_builder, "s", "Role");
 
-	if (spp->server) {
-		g_variant_builder_add (&profile_builder, "v",
+	g_variant_builder_add (&profile_builder, "v",
 				g_variant_new_string("server"));
-	} else {
-		g_variant_builder_add (&profile_builder, "v",
-				g_variant_new_string("client"));
-	}
 		
 	g_variant_builder_close(&profile_builder);
 
@@ -151,39 +145,8 @@ server_read_data (gpointer user_data) {
 		printf("error reading from client [%d] %s\n", errno, strerror(errno));
 	}
 
-	// close connection
-	close(spp->sock_fd);
-
-	// all done!
-	g_main_loop_quit(spp->loop);
-
-	// make this a one-shot
-	return false;
-}
-
-gboolean
-client_write_data (gpointer user_data) {
-	int status;
-	struct spp_data *spp = user_data;
-
-	printf("client_write_data called\n");	
-	
-	// read data from the client
-	status = write(spp->sock_fd, "Hello World!", 12);
-	if (status < 0) {
-		perror("client: write to socket failed!\n");
-	}
-
-	printf("client_write_data status OK!\n");		
-
-	// close connection
-	close(spp->sock_fd);
-
-	// all done!
-	g_main_loop_quit(spp->loop);	
-
-	// make this a one-shot
-	return false;
+	// continue listening
+	return true;
 }
 
 void
@@ -242,11 +205,7 @@ on_handle_new_connection (OrgBluezProfile1 *interface,
 	// finished with method call; no reply sent
 	g_dbus_method_invocation_return_value(invocation, NULL);
 
-	if (spp->server) {
-		g_idle_add(server_read_data, spp);
-	} else {	
-		g_idle_add(client_write_data, spp);
-	}
+	g_idle_add(server_read_data, spp);
 		
 	return TRUE;
 }
@@ -260,15 +219,6 @@ int main(int argc, char *argv[])
 	struct spp_data *spp;	
 
 	spp = g_new0 (struct spp_data, 1);
-
-	/* TODO: add real command-line handling.  Currently any string
-	 * specified on the command-line triggers client mode.  This
-	 * is leftover behavior from the legacy rfcomm sample application
-	 * which required the client to know the remote server's MAC addr.
-	 */
-	if (argc == 1) {
-		spp->server = true;
-	}
 
 	spp->loop = g_main_loop_new (NULL, FALSE);
 	
