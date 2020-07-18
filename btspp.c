@@ -162,8 +162,8 @@ print_bdaddr (gchar *prefix, const bdaddr_t *bdaddr)
     printf ("%s: ", prefix);
 
     // print BTADDR in reverse
-    for (int i = 5; i > -1; i--) {
-        printf("%02X", bdaddr->b[i]);
+    for (int i = 5; i >= 0; i--) {
+        printf("%02X%s", bdaddr->b[i], i > 0 ? ":":"");
     }
 
     printf ("\n");
@@ -195,14 +195,14 @@ on_handle_new_connection (OrgBluezProfile1 *interface,
         return FALSE;
     }
 
-    print_bdaddr("handle_new_conn local: ", &(spp->local.rc_bdaddr));
+    print_bdaddr("handle_new_conn local", &(spp->local.rc_bdaddr));
 
     if (getpeername (spp->sock_fd, (struct sockaddr *) &(spp->remote), &optlen) < 0) {
         printf("handle_new_conn: remote getsockname failed: %s\n", strerror(errno));
         return FALSE;
     }
 
-    print_bdaddr("handle_new_conn remote: ", &(spp->remote.rc_bdaddr));
+    print_bdaddr("handle_new_conn remote", &(spp->remote.rc_bdaddr));
 
     // finished with method call; no reply sent
     g_dbus_method_invocation_return_value(invocation, NULL);
