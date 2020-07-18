@@ -44,13 +44,12 @@ struct sockaddr_rc {
 };
 
 struct spp_data {
-    GMainLoop *loop;
     int sock_fd;
     struct sockaddr_rc local;
     struct sockaddr_rc remote;
 };
 
-int register_profile(struct spp_data *spp, GDBusProxy *proxy)
+int register_profile(GDBusProxy *proxy)
 {
     GVariant *profile;
     GVariantBuilder profile_builder;
@@ -102,7 +101,7 @@ int register_profile(struct spp_data *spp, GDBusProxy *proxy)
     g_variant_builder_close(&profile_builder);
     profile = g_variant_builder_end(&profile_builder);
 
-    g_dbus_proxy_call_sync (proxy,
+    g_dbus_proxy_call_sync(proxy,
                 "RegisterProfile",
                 profile,
                 G_DBUS_CALL_FLAGS_NONE,
@@ -166,9 +165,9 @@ server_read_data (gpointer user_data) {
 }
 
 void
-print_bdaddr (gchar *prefix, const bdaddr_t *bdaddr)
+print_bdaddr(gchar *prefix, const bdaddr_t *bdaddr)
 {
-    printf ("%s: ", prefix);
+    printf("%s: ", prefix);
 
     // print BTADDR in reverse
     for (int i = 5; i >= 0; i--) {
@@ -177,7 +176,7 @@ print_bdaddr (gchar *prefix, const bdaddr_t *bdaddr)
 }
 
 static gboolean
-on_handle_new_connection (OrgBluezProfile1 *interface,
+on_handle_new_connection(OrgBluezProfile1 *interface,
             GDBusMethodInvocation *invocation,
             const gchar           *device,
             const GVariant        *fd,
@@ -190,21 +189,21 @@ on_handle_new_connection (OrgBluezProfile1 *interface,
     static socklen_t optlen = sizeof(struct sockaddr_rc);
     struct spp_data *spp = user_data;
 
-    message = g_dbus_method_invocation_get_message (invocation);
-    fd_list = g_dbus_message_get_unix_fd_list (message);
-    spp->sock_fd = g_unix_fd_list_get (fd_list, 0, &error);
-    g_assert_no_error (error);
+    message = g_dbus_method_invocation_get_message(invocation);
+    fd_list = g_dbus_message_get_unix_fd_list(message);
+    spp->sock_fd = g_unix_fd_list_get(fd_list, 0, &error);
+    g_assert_no_error(error);
 
-    printf ("handle_new_conn called for device: %s fd: %d!\n", device, spp->sock_fd);
+    printf("handle_new_conn called for device: %s fd: %d!\n", device, spp->sock_fd);
 
-    if (getsockname (spp->sock_fd, (struct sockaddr *) &(spp->local), &optlen) < 0) {
+    if (getsockname(spp->sock_fd, (struct sockaddr *) &(spp->local), &optlen) < 0) {
         printf("handle_new_conn: local getsockname failed: %s\n", strerror(errno));
         return FALSE;
     }
 
     print_bdaddr("handle_new_conn local", &(spp->local.rc_bdaddr));
 
-    if (getpeername (spp->sock_fd, (struct sockaddr *) &(spp->remote), &optlen) < 0) {
+    if (getpeername(spp->sock_fd, (struct sockaddr *) &(spp->remote), &optlen) < 0) {
         printf("handle_new_conn: remote getsockname failed: %s\n", strerror(errno));
         return FALSE;
     }
@@ -227,14 +226,14 @@ int main(int argc, char *argv[])
     OrgBluezProfile1 *interface;
     struct spp_data *spp;
 
-    spp = g_new0 (struct spp_data, 1);
+    spp = g_new0(struct spp_data, 1);
 
-    spp->loop = g_main_loop_new (NULL, FALSE);
+    GMainLoop *loop = g_main_loop_new(NULL, FALSE);
 
-    conn = g_bus_get_sync (G_BUS_TYPE_SYSTEM, NULL, &error);
-    g_assert_no_error (error);
+    conn = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, &error);
+    g_assert_no_error(error);
 
-    proxy = g_dbus_proxy_new_sync (conn,
+    proxy = g_dbus_proxy_new_sync(conn,
                 G_DBUS_PROXY_FLAGS_NONE,
                 NULL,/* GDBusInterfaceInfo */
                 "org.bluez",/* name */
@@ -242,33 +241,33 @@ int main(int argc, char *argv[])
                 "org.bluez.ProfileManager1",/* interface */
                 NULL,/* GCancellable */
                 &error);
-    g_assert_no_error (error);
+    g_assert_no_error(error);
 
-    if (register_profile (spp, proxy)) {
+    if (register_profile(proxy)) {
         return 0;
     }
 
-    interface = org_bluez_profile1_skeleton_new ();
+    interface = org_bluez_profile1_skeleton_new();
 
-    g_signal_connect (interface,
+    g_signal_connect(interface,
             "handle_new_connection",
             G_CALLBACK (on_handle_new_connection),
             spp);
 
     error = NULL;
-    if (!g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (interface),
+    if (!g_dbus_interface_skeleton_export(G_DBUS_INTERFACE_SKELETON(interface),
                         conn,
                         SERIAL_PORT_PROFILE_PATH,
                         &error))
     {
-        printf ("dbus_interface_skeleton_export failed for SPP!\n");
+        printf("dbus_interface_skeleton_export failed for SPP!\n");
         return 1;
     }
 
-    g_main_loop_run (spp->loop);
+    g_main_loop_run(loop);
 
-    g_object_unref (proxy);
-    g_object_unref (conn);
+    g_object_unref(proxy);
+    g_object_unref(conn);
 
     return 0;
 }
