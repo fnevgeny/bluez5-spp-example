@@ -147,6 +147,15 @@ server_read_data (gpointer user_data) {
         }
         printf("received [%s]\n", buf);
 
+        // echo the data back to the client
+        int status = write(spp->sock_fd, buf, bytes_read);
+        if (status < 0) {
+            perror("client: write to socket failed!\n");
+            return false;
+        } else {
+            printf("client_write_data status OK!\n");
+        }
+
         // continue listening
         return true;
     } else {
