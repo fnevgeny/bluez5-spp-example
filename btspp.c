@@ -140,6 +140,10 @@ server_read_data (gpointer user_data) {
 	// read data from the client
 	bytes_read = read(spp->sock_fd, buf, sizeof(buf));
 	if ( bytes_read > 0 ) {
+                while (buf[bytes_read - 1] == '\n' ||
+                       buf[bytes_read - 1] == '\r') {
+                    buf[--bytes_read] = '\0';
+                }
 		printf("received [%s]\n", buf);
 
 	        // continue listening
