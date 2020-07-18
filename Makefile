@@ -10,7 +10,12 @@ all: btspp
 btspp: btspp.c profile1-iface.h profile1-iface.c
 	gcc $^ -o $@ $(CFLAGS) $(CFLAGS_DBUS) $(CFLAGS_GIO) $(CFLAGS_GIO_UNIX)
 
+profile1-iface.c: btspp.xml
+	gdbus-codegen $? --generate-c-code profile1-iface
+profile1-iface.h: profile1-iface.c
+	@:
+
 clean:
-	rm -f btspp
+	rm -f btspp profile1-iface.h profile1-iface.c
 
 .PHONY: all clean
